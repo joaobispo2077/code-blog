@@ -8,10 +8,10 @@ module.exports = {
     try {
       const usuario = new Usuario({
         nome,
-        email,
-        senha
+        email
       });
 
+      await usuario.addPassword(senha);
       await usuario.adiciona();
 
       res.status(201).json();

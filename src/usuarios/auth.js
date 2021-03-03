@@ -19,7 +19,7 @@ passport.use(
     usernameField: 'email',
     passwordField: 'senha',
     session: false,
-  }),
+  },
   async (email, senha, done) => {
     try {
       const usuario = await Usuario.buscaPorEmail(email);
@@ -32,5 +32,6 @@ passport.use(
     catch (err) {
       done(err);
     }
-  }
+  })
+
 )

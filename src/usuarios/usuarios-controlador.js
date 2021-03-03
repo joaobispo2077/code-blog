@@ -25,6 +25,9 @@ module.exports = {
       }
     }
   },
+  login: async (req, res) => {
+    res.status(204).end();
+  },
 
   lista: async (req, res) => {
     const usuarios = await Usuario.lista();

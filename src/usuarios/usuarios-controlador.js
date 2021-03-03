@@ -7,7 +7,7 @@ const generateTokenJWT = (user) => {
     id: user.id
   }
 
-  const token = jwt.sign(payload, 'secret-key');
+  const token = jwt.sign(payload, process.env.SECRET_KEY_JWT);
   return token;
 }
 
@@ -37,7 +37,7 @@ module.exports = {
   },
   login: async (req, res) => {
     const token = generateTokenJWT(req.user);
-    res.set('Authorization', 'Bearer ' + token);
+    res.set('Authorization', token);
     res.status(204).end();
   },
 

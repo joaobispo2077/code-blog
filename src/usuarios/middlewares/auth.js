@@ -30,6 +30,7 @@ module.exports = {
         if (!user) return res.status(401).json();
 
         req.user = user;
+        req.token = info.token;
         return next();
       }
     )(req, res, next)

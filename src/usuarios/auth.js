@@ -17,37 +17,45 @@ const verifyPassword = async (password, hashPassword) => {
   if (!isValidPassword) throw new InvalidArgumentError("E-mail ou senha inválidos");
 }
 
+const blacklist = require('../../redis/handle-blacklist');
+const _verifyBlacklist = async (token) => {
+  const tokenExistsInBlacklist = await blacklist.verifyToken(token);
+  if (tokenExistsInBlacklist)
+    throw new jwt.JsonWebTokenError('Invalid Token By Logout');
+}
+
 passport.use(
   new LocalStrategy({
     usernameField: 'email',
     passwordField: 'senha',
     session: false,
   },
-  async (email, senha, done) => {
-    try {
-      const usuario = await Usuario.buscaPorEmail(email);
-      userAlreadyExists(usuario);
+    async (email, senha, done) => {
+      try {
+        const usuario = await Usuario.buscaPorEmail(email);
+        userAlreadyExists(usuario);
 
-      await verifyPassword(senha, usuario.hashPassword);
+        await verifyPassword(senha, usuario.hashPassword);
 
-      done(null, usuario);
-    }
-    catch (err) {
-      done(err);
-    }
-  })
+        done(null, usuario);
+      }
+      catch (err) {
+        done(err);
+      }
+    })
 )
 
 passport.use(
   new BearerStrategy(
     async (token, done) => {
       try {
+        await _verifyBlacklist(token);
         const payload = jwt.verify(token, process.env.SECRET_KEY_JWT);
         const user = await Usuario.buscaPorId(payload.id);
-        done(null, user);
+        done(null, user, { token });
 
       }
-      catch(err) {
+      catch (err) {
         done(err);
       }
     }

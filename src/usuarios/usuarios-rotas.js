@@ -4,11 +4,15 @@ const middlearesAUTH = require('./middlewares/auth');
 
 module.exports = app => {
   app
-  .route('/usuario/login')
-  .post(
-    middlearesAUTH.local,
-    usuariosControlador.login
+    .route('/usuario/login')
+    .post(
+      middlearesAUTH.local,
+      usuariosControlador.login
     )
+
+  app
+    .route('/usuario/logout')
+    .get(middlearesAUTH.bearer, usuariosControlador.logout)
   app
     .route('/usuario')
     .post(
@@ -19,7 +23,7 @@ module.exports = app => {
   app
     .route('/usuario/:id')
     .delete(passport
-      .authenticate('bearer', { session: false }), 
+      .authenticate('bearer', { session: false }),
       usuariosControlador.deleta
     );
 };

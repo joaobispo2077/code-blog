@@ -4,10 +4,6 @@ const bodyParser = require('body-parser');
 
 const { auth } = require('./src/usuarios');
 
-app.use(
-  bodyParser.urlencoded({
-    extended: true
-  })
-);
+app.use(express.json());
 
 module.exports = app;

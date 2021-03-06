@@ -1,5 +1,4 @@
 const passport = require('passport');
-const jwt = require('jsonwebtoken');
 const LocalStrategy = require('passport-local');
 const BearerStrategy = require('passport-http-bearer');
 
@@ -7,6 +6,7 @@ const bcrypt = require('bcrypt');
 
 const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError } = require('../erros');
+const tokens = require('./tokens');
 
 const userAlreadyExists = (user) => {
   if (!user) throw new InvalidArgumentError("Usuário inexistente.");
@@ -15,13 +15,6 @@ const userAlreadyExists = (user) => {
 const verifyPassword = async (password, hashPassword) => {
   const isValidPassword = await bcrypt.compare(password, hashPassword);
   if (!isValidPassword) throw new InvalidArgumentError("E-mail ou senha inválidos");
-}
-
-const blacklist = require('../../redis/blocklist-access-token.js');
-const _verifyBlacklist = async (token) => {
-  const tokenExistsInBlacklist = await blacklist.verifyToken(token);
-  if (tokenExistsInBlacklist)
-    throw new jwt.JsonWebTokenError('Invalid Token By Logout');
 }
 
 passport.use(
@@ -49,11 +42,9 @@ passport.use(
   new BearerStrategy(
     async (token, done) => {
       try {
-        await _verifyBlacklist(token);
-        const payload = jwt.verify(token, process.env.SECRET_KEY_JWT);
-        const user = await Usuario.buscaPorId(payload.id);
+        const id = await tokens.access.verify(token);
+        const user = await Usuario.buscaPorId(id);
         done(null, user, { token });
-
       }
       catch (err) {
         done(err);

@@ -7,7 +7,7 @@ const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError, InternalServerError } = require('../erros');
 const allowlistRefreshToken = require('../../redis/allowlist-refresh-tokens');
 
-const blacklist = require('../../redis/handle-blacklist');
+const blacklist = require('../../redis/blocklist-access-token.js');
 
 const generateTokenJWT = (user) => {
   const payload = {

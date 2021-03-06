@@ -17,7 +17,7 @@ const verifyPassword = async (password, hashPassword) => {
   if (!isValidPassword) throw new InvalidArgumentError("E-mail ou senha inválidos");
 }
 
-const blacklist = require('../../redis/handle-blacklist');
+const blacklist = require('../../redis/blocklist-access-token.js');
 const _verifyBlacklist = async (token) => {
   const tokenExistsInBlacklist = await blacklist.verifyToken(token);
   if (tokenExistsInBlacklist)

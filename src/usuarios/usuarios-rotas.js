@@ -28,6 +28,9 @@ module.exports = app => {
     .get(usuariosControlador.lista);
 
   app
+    .route('/usuario/verify-email/:token')
+    .get(middlearesAUTH.verifyEmail, usuariosControlador.verifyEmail);
+  app
     .route('/usuario/:id')
     .delete(passport
       .authenticate('bearer', { session: false }),

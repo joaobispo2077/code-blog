@@ -8,6 +8,8 @@ const blocklistAccessToken = require('../../redis/blocklist-access-token');
 const { InvalidArgumentError } = require('../erros');
 
 const _verifyBlocklist = async (token, blocklist, tokenName) => {
+  if (!blocklist) return;
+
   const tokenExistsInBlacklist = await blocklist.verifyToken(token);
   if (tokenExistsInBlacklist)
     throw new jwt.JsonWebTokenError(`Invalid ${tokenName} By Logout`);
@@ -27,7 +29,7 @@ const _invalidateJWTToken = (token, blocklist) => {
   return blocklist.addToken(token);
 }
 
-const _verifyJWTToken = async (token, blocklist, tokenName) => {
+const _verifyJWTToken = async (token, tokenName, blocklist) => {
   await _verifyBlocklist(token, blocklist, tokenName);
   const payload = jwt.verify(token, process.env.SECRET_KEY_JWT);
   return payload.id;
@@ -75,7 +77,7 @@ module.exports = {
       return _generateTokenJWT(id, this.expiration);
     },
     verify(token) {
-      return _verifyJWTToken(token, this.list, this.name);
+      return _verifyJWTToken(token, this.name, this.list);
     },
     invalidate(token) {
       return _invalidateJWTToken(token, this.list);
@@ -93,6 +95,16 @@ module.exports = {
     },
     invalidate(token) {
       return _invalidateOpaqueToken(token, this.list);
+    }
+  },
+  verifyEmail: {
+    name: "email token",
+    expiration: [1, 'h'],
+    create(id) {
+      return _generateTokenJWT(id, this.expiration);
+    },
+    verify(token) {
+      return _verifyJWTToken(token, this.nome);
     }
   }
 }

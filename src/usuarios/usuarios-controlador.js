@@ -1,7 +1,12 @@
 const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError, InternalServerError } = require('../erros');
 const tokens = require('./tokens');
+const { EmailVerifier } = require('./emails');
 
+const _getAddress = (route, token) => {
+  const baseURL = process.env.BASE_URL;
+  return `${baseURL}/${route}/${token}`;
+}
 
 module.exports = {
   adiciona: async (req, res) => {
@@ -10,12 +15,18 @@ module.exports = {
     try {
       const usuario = new Usuario({
         nome,
-        email
+        email,
+        verified_email: false
       });
 
       await usuario.addPassword(senha);
       await usuario.adiciona();
 
+      const token = tokens.verifyEmail.create(usuario.id);
+      const URL = _getAddress('usuario/verify-email', token);
+
+      const emails = new EmailVerifier(usuario, URL);
+      emails.sendEmail().catch(console.log);
       res.status(201).json();
     } catch (erro) {
       if (erro instanceof InvalidArgumentError) {
@@ -48,6 +59,16 @@ module.exports = {
   lista: async (req, res) => {
     const usuarios = await Usuario.lista();
     res.json(usuarios);
+  },
+
+  verifyEmail: async (req, res) => {
+    try {
+      const usuario = req.user;
+      await usuario.verifyEmail();
+      res.status(200).json({});
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   },
 
   deleta: async (req, res) => {

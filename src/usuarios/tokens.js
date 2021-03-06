@@ -23,7 +23,11 @@ const _generateTokenJWT = (id, [expirationTime,
   return token;
 }
 
-const _verifyJWToken = async (token, blocklist, tokenName) => {
+const _invalidateJWTToken = (token, blocklist) => {
+  return blocklist.addToken(token);
+}
+
+const _verifyJWTToken = async (token, blocklist, tokenName) => {
   await _verifyBlocklist(token, blocklist, tokenName);
   const payload = jwt.verify(token, process.env.SECRET_KEY_JWT);
   return payload.id;
@@ -55,9 +59,12 @@ function isValidToken(id, tokenName) {
 
 function hasToken(token, tokenName) {
   if (!token)
-    throw new InvalidArgumentErrorentError(`${tokenName} token is required`);
+    throw new InvalidArgumentError(`${tokenName} token is required`);
 }
 
+async function _invalidateOpaqueToken(token, allowlist) {
+  await allowlist.deleteByKey(token);
+}
 
 module.exports = {
   access: {
@@ -68,7 +75,10 @@ module.exports = {
       return _generateTokenJWT(id, this.expiration);
     },
     verify(token) {
-      return _verifyJWToken(token, this.list, this.name);
+      return _verifyJWTToken(token, this.list, this.name);
+    },
+    invalidate(token) {
+      return _invalidateJWTToken(token, this.list);
     }
   },
   refresh: {
@@ -80,6 +90,9 @@ module.exports = {
     },
     verify(token) {
       return _verifyOpaqueToken(token, this.list, this.name);
+    },
+    invalidate(token) {
+      return _invalidateOpaqueToken(token, this.list);
     }
   }
 }

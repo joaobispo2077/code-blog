@@ -1,7 +1,5 @@
 const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError, InternalServerError } = require('../erros');
-
-const blocklist = require('../../redis/blocklist-access-token.js');
 const tokens = require('./tokens');
 
 
@@ -38,7 +36,7 @@ module.exports = {
   logout: async (req, res) => {
     try {
       const token = req.token;
-      await blocklist.addToken(token);
+      await tokens.access.invalidate(token);
       return res.status(204).send();
 
     }

@@ -1,4 +1,20 @@
 const passport = require('passport');
+const Usuario = require('../usuarios-modelo');
+const { InvalidArgumentError } = require('../../erros');
+const allowlistRefreshToken = require('../../../redis/allowlist-refresh-tokens');
+
+async function verifyRefreshToken(refreshToken) {
+  if (!refreshToken) throw new InvalidArgumentError('Refresh token is required');
+
+  const id = await allowlistRefreshToken.getValueByKey(refreshToken);
+  if (!id) throw new InvalidArgumentError('Invalid refresh token');
+
+  return id;
+}
+
+async function invalidateRefreshToken(refreshToken) {
+  await allowlistRefreshToken.deleteByKey(refreshToken);
+}
 
 module.exports = {
   local: (req, res, next) => {
@@ -34,6 +50,21 @@ module.exports = {
         return next();
       }
     )(req, res, next)
+  },
+  refresh: async (req, res, next) => {
+    try {
+      const { refreshToken } = req.body;
+      const id = await verifyRefreshToken(refreshToken);
+      await invalidateRefreshToken(refreshToken);
+      req.user = await Usuario.buscaPorId(id);
+      return next();
+    }
+    catch (err) {
+      if (err.name === 'InvalidArgumentError')
+        return res.status(401).json({ error: err.message });
+
+      return res.status(500).json({ error: err.message });
+    }
   }
 
 }

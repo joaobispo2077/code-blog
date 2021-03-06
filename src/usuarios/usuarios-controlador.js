@@ -1,6 +1,11 @@
+const crypto = require('crypto');
+
 const jwt = require('jsonwebtoken');
+const moment = require('moment');
+
 const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError, InternalServerError } = require('../erros');
+const allowlistRefreshToken = require('../../redis/allowlist-refresh-tokens');
 
 const blacklist = require('../../redis/handle-blacklist');
 
@@ -11,6 +16,13 @@ const generateTokenJWT = (user) => {
 
   const token = jwt.sign(payload, process.env.SECRET_KEY_JWT, { expiresIn: '15m' });
   return token;
+}
+
+const generateOpaqueToken = async (user) => {
+  const opaqueToken = crypto.randomBytes(24).toString('hex');
+  const expireDate = moment().add(5, 'd').unix();
+  await allowlistRefreshToken.addKey(opaqueToken, user.id, expireDate);
+  return opaqueToken;
 }
 
 module.exports = {
@@ -38,9 +50,10 @@ module.exports = {
     }
   },
   login: async (req, res) => {
-    const token = generateTokenJWT(req.user);
-    res.set('Authorization', token);
-    res.status(204).end();
+    const accessToken = generateTokenJWT(req.user);
+    const refreshToken = await generateOpaqueToken(req.user);
+    res.set('Authorization', accessToken);
+    res.status(200).json({ refreshToken });
   },
   logout: async (req, res) => {
     try {

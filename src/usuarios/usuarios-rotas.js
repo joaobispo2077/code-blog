@@ -18,6 +18,9 @@ module.exports = app => {
     )
 
   app
+    .route('/usuario/verify-email/:token')
+    .get(middlearesAUTH.verifyEmail, usuariosControlador.verifyEmail);
+  app
     .route('/usuario/logout')
     .post([middlearesAUTH.refresh, middlearesAUTH.bearer], usuariosControlador.logout)
   app
@@ -27,9 +30,6 @@ module.exports = app => {
     )
     .get(usuariosControlador.lista);
 
-  app
-    .route('/usuario/verify-email/:token')
-    .get(middlearesAUTH.verifyEmail, usuariosControlador.verifyEmail);
   app
     .route('/usuario/:id')
     .delete(passport

@@ -1,115 +1,69 @@
-const db = require('../../database');
-const { InternalServerError } = require('../erros');
+const db = require('../../database')
+const { InternalServerError } = require('../erros')
+
+const { promisify } = require('util')
+const dbRun = promisify(db.run).bind(db)
+const dbGet = promisify(db.get).bind(db)
+const dbAll = promisify(db.all).bind(db)
 
 module.exports = {
-  adiciona: usuario => {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-          INSERT INTO usuarios (
-            nome,
-            email,
-            hashPassword,
-            verified_email
-          ) VALUES (?, ?, ?, ?)
-        `,
-        [usuario.nome, usuario.email, usuario.hashPassword, usuario.verified_email],
-        erro => {
-          if (erro) {
-            reject(new InternalServerError('Erro ao adicionar o usuário!'));
-          }
-
-          return resolve();
-        }
-      );
-    });
+  async adiciona(usuario) {
+    try {
+      await dbRun(
+        `INSERT INTO usuarios (nome, email, hashPassword, verified_email) 
+        VALUES (?, ?, ?, ?)`,
+        [
+          usuario.nome,
+          usuario.email,
+          usuario.hashPassword,
+          usuario.emailVerificado
+        ]
+      )
+    } catch (erro) {
+      console.log(erro);
+      throw new InternalServerError('Erro ao adicionar o usuário!')
+    }
   },
 
-  buscaPorId: id => {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `
-          SELECT *
-          FROM usuarios
-          WHERE id = ?
-        `,
-        [id],
-        (erro, usuario) => {
-          if (erro) {
-            return reject('Não foi possível encontrar o usuário!');
-          }
-
-          return resolve(usuario);
-        }
-      );
-    });
+  async buscaPorId(id) {
+    try {
+      return await dbGet('SELECT * FROM usuarios WHERE id = ?', [id])
+    } catch (erro) {
+      throw new InternalServerError('Não foi possível encontrar o usuário!')
+    }
   },
 
-  buscaPorEmail: email => {
-    return new Promise((resolve, reject) => {
-      db.get(
-        `
-          SELECT *
-          FROM usuarios
-          WHERE email = ?
-        `,
-        [email],
-        (erro, usuario) => {
-          if (erro) {
-            return reject('Não foi possível encontrar o usuário!');
-          }
-
-          return resolve(usuario);
-        }
-      );
-    });
+  async buscaPorEmail(email) {
+    try {
+      return await dbGet('SELECT * FROM usuarios WHERE email = ?', [email])
+    } catch (erro) {
+      throw new InternalServerError('Não foi possível encontrar o usuário!')
+    }
   },
 
-  lista: () => {
-    return new Promise((resolve, reject) => {
-      db.all(
-        `
-          SELECT * FROM usuarios
-        `,
-        (erro, usuarios) => {
-          if (erro) {
-            return reject('Erro ao listar usuários');
-          }
-          return resolve(usuarios);
-        }
-      );
-    });
+  async lista() {
+    try {
+      return await dbAll('SELECT * FROM usuarios')
+    } catch (erro) {
+      throw new InternalServerError('Erro ao listar usuários!')
+    }
   },
 
-  verifyEmail: (verified_email, id) => {
-    return new Promise((resolve, reject) => {
-      db.run(`UPDATE usuarios SET verified_email = ? WHERE id = ?`, [verified_email, id],
-        erro => {
-          if (erro) {
-            return reject('Erro ao deletar o usuário');
-          }
-          return resolve()
-        }
-      );
-    });
-
+  async verifyEmail(verified_email, id) {
+    try {
+      await dbRun('UPDATE usuarios SET verified_email = ? WHERE id = ?', [
+        verified_email, id
+      ])
+    } catch (erro) {
+      throw new InternalServerError('Erro ao modificar a verficação de e-mail!')
+    }
   },
 
-  deleta: usuario => {
-    return new Promise((resolve, reject) => {
-      db.run(
-        `
-          DELETE FROM usuarios
-          WHERE id = ?
-        `,
-        [usuario.id],
-        erro => {
-          if (erro) {
-            return reject('Erro ao deletar o usuário');
-          }
-          return resolve();
-        }
-      );
-    });
+  async deleta(usuario) {
+    try {
+      await dbRun('DELETE FROM usuarios WHERE id = ?', [usuario.id])
+    } catch (erro) {
+      throw new InternalServerError('Erro ao deletar o usuário')
+    }
   }
-};
+}

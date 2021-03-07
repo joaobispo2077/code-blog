@@ -1,16 +1,11 @@
-const jwt = require('jsonwebtoken');
 const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError, InternalServerError } = require('../erros');
+const tokens = require('./tokens');
+const { EmailVerifier } = require('./emails');
 
-const blacklist = require('../../redis/handle-blacklist');
-
-const generateTokenJWT = (user) => {
-  const payload = {
-    id: user.id
-  }
-
-  const token = jwt.sign(payload, process.env.SECRET_KEY_JWT, { expiresIn: '15m' });
-  return token;
+const _getAddress = (route, token) => {
+  const baseURL = process.env.BASE_URL;
+  return `${baseURL}/${route}/${token}`;
 }
 
 module.exports = {
@@ -20,12 +15,18 @@ module.exports = {
     try {
       const usuario = new Usuario({
         nome,
-        email
+        email,
+        verified_email: false
       });
 
       await usuario.addPassword(senha);
       await usuario.adiciona();
 
+      const token = tokens.verifyEmail.create(usuario.id);
+      const URL = _getAddress('usuario/verify-email', token);
+
+      const emails = new EmailVerifier(usuario, URL);
+      emails.sendEmail().catch(console.log);
       res.status(201).json();
     } catch (erro) {
       if (erro instanceof InvalidArgumentError) {
@@ -38,14 +39,15 @@ module.exports = {
     }
   },
   login: async (req, res) => {
-    const token = generateTokenJWT(req.user);
-    res.set('Authorization', token);
-    res.status(204).end();
+    const accessToken = tokens.access.create(req.user.id);
+    const refreshToken = await tokens.refresh.create(req.user.id);
+    res.set('Authorization', accessToken);
+    res.status(200).json({ refreshToken });
   },
   logout: async (req, res) => {
     try {
       const token = req.token;
-      await blacklist.addToken(token);
+      await tokens.access.invalidate(token);
       return res.status(204).send();
 
     }
@@ -57,6 +59,16 @@ module.exports = {
   lista: async (req, res) => {
     const usuarios = await Usuario.lista();
     res.json(usuarios);
+  },
+
+  verifyEmail: async (req, res) => {
+    try {
+      const usuario = req.user;
+      await usuario.verifyEmail();
+      res.status(200).json({});
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
   },
 
   deleta: async (req, res) => {

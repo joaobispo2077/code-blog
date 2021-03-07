@@ -9,10 +9,11 @@ module.exports = {
           INSERT INTO usuarios (
             nome,
             email,
-            hashPassword
-          ) VALUES (?, ?, ?)
+            hashPassword,
+            verified_email
+          ) VALUES (?, ?, ?, ?)
         `,
-        [usuario.nome, usuario.email, usuario.hashPassword],
+        [usuario.nome, usuario.email, usuario.hashPassword, usuario.verified_email],
         erro => {
           if (erro) {
             reject(new InternalServerError('Erro ao adicionar o usuário!'));
@@ -78,6 +79,20 @@ module.exports = {
         }
       );
     });
+  },
+
+  verifyEmail: (verified_email, id) => {
+    return new Promise((resolve, reject) => {
+      db.run(`UPDATE usuarios SET verified_email = ? WHERE id = ?`, [verified_email, id],
+        erro => {
+          if (erro) {
+            return reject('Erro ao deletar o usuário');
+          }
+          return resolve()
+        }
+      );
+    });
+
   },
 
   deleta: usuario => {

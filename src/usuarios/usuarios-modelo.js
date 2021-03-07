@@ -10,6 +10,7 @@ class Usuario {
     this.nome = usuario.nome;
     this.email = usuario.email;
     this.hashPassword = usuario.hashPassword;
+    this.verified_email = usuario.verified_email;
 
     this.valida();
   }
@@ -19,10 +20,12 @@ class Usuario {
       throw new InvalidArgumentError('O usuário já existe!');
     }
 
-    return usuariosDao.adiciona(this);
+    await usuariosDao.adiciona(this);
+    const { id } = await usuariosDao.buscaPorEmail(this.email);
+    this.id = id;
   }
 
-  async addPassword(password) {    
+  async addPassword(password) {
     validacoes.campoStringNaoNulo(password, 'senha');
     validacoes.campoTamanhoMinimo(password, 'senha', 8);
     validacoes.campoTamanhoMaximo(password, 'senha', 64);
@@ -34,26 +37,31 @@ class Usuario {
     validacoes.campoStringNaoNulo(this.email, 'email');
   }
 
-  
+  async verifyEmail(email) {
+    this.verified_email = true;
+    await usuariosDao.verifyEmail(this.verified_email, this.id);
+  }
+
+
   async deleta() {
     return usuariosDao.deleta(this);
   }
-  
+
   static async buscaPorId(id) {
     const usuario = await usuariosDao.buscaPorId(id);
     if (!usuario) {
       return null;
     }
-    
+
     return new Usuario(usuario);
   }
-  
+
   static async buscaPorEmail(email) {
     const usuario = await usuariosDao.buscaPorEmail(email);
     if (!usuario) {
       return null;
     }
-    
+
     return new Usuario(usuario);
   }
 
